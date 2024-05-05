@@ -227,6 +227,7 @@ def build_callbacks(model, optimizer, run_path, epochs=None, verbose=0):
 
 def save_train_history(history, run_path):
     training_loss_plot_save_fullname = path_join(run_path, "train-loss.jpg")
+
     plot_xs_and_ys(
         [np.arange(len(history['loss'])), np.arange(len(history['val_loss']))],
         [history['loss'], history['val_loss']], ['train loss', 'val loss'],

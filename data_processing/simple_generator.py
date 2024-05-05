@@ -8,12 +8,12 @@ import tensorflow as tf
 class SimpleGenerator(tf.compat.v2.keras.utils.Sequence):
 
     def __init__(self, X_data, y_data, sample_indice=None, batch_size=128, n_classes=10, gen_y=True, shuffle=True, preprocess=True):
-        self.batch_size = batch_size
         self.X_data = X_data
         self.y_data = y_data
         self.sample_indice = sample_indice
-        self.gen_y = gen_y
+        self.batch_size = batch_size
         self.n_classes = n_classes
+        self.gen_y = gen_y
         self.shuffle = shuffle
         self.preprocess = preprocess
 
@@ -89,8 +89,7 @@ class SimpleGenerator(tf.compat.v2.keras.utils.Sequence):
         if self.sample_indice is not None:
             y_indice = np.array([self.sample_indice[ID] for ID in list_IDs_temp])
 
-            # print(y.shape, y_indice[:, np.newaxis].shape)
+            # print(y[:, np.newaxis].shape, y_indice[:, np.newaxis].shape)
             y = np.hstack([y[:, np.newaxis], y_indice[:, np.newaxis]])
-
 
         return y

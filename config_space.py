@@ -55,7 +55,7 @@ def parse_config_space(ss_config: Union[dict, str]) -> CS.ConfigurationSpace:
     return cs
 
 
-def load_config(config_file_name):
+def load_config(config_file_name: str) -> dict:
     with open(config_file_name, 'r') as f:
         run_config = json.load(f)
     return run_config
@@ -96,13 +96,13 @@ def format_suggested_config(suggested_config, experiment_config):
                 if value[0] == 'categorical':
                     category_index = int(np.round(suggested_value))
                     hp_value = value[1][category_index]
+                elif 'depth' in name:
+                    # Means this is layer depth, which should be divisible by 8
+                    hp_value = int(np.round(suggested_value) * 8)
                 elif len(value) == 4 and value[3]:
                     # Means this hp is log
                     hp_value = 10 ** suggested_value
                     # print("Scaled {} from {:.4f} to {:.4f}".format(name, suggested_value, hp_value))
-                elif 'depth' in name:
-                    # Means this is layer depth, which should be divisible by 8
-                    hp_value = int(np.round(hp_value) * 8)
                 elif value[0][-1] == 'i':
                     # Means this hp is integer
                     hp_value = int(np.round(suggested_value))

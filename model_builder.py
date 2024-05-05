@@ -17,6 +17,9 @@ def build_model(run_config):
     elif architecture == 'LeNet2':
         return build_LeNet2_model(run_config)
 
+    elif architecture == 'LeNet':
+        return build_LeNet_model(run_config)
+
     else:
         raise NotImplementedError("Architecture '{}' not implemented".format(architecture))
 
@@ -85,6 +88,64 @@ def build_LeNet2_model(model_config):
     model.add(parse_activation(model_config['activation']))
 
     model.add(Dropout(model_config['dropout_rate']))
+    model.add(Dense(model_config['num_classes'], activation='softmax', dtype='float32'))
+
+    return model
+
+
+def build_LeNet_model(model_config):
+    tf.keras.backend.set_image_data_format(model_config['data_format'])
+
+    model = Sequential()
+    model.add(InputLayer(input_shape=model_config['input_shape']))
+
+    for i in range(model_config.get("n_conv", 0)):
+        layer_idx = i + 1
+
+        conv_depth = model_config.get("conv_depth", False) or model_config.get("conv%s_depth" % layer_idx, False)
+        window_size = model_config.get('window_size', False) or model_config.get("window%s_size" % layer_idx, False)
+        l2_reg = model_config.get("l2_reg", False)
+
+        model.add(Conv2D(int(conv_depth), kernel_size=(int(window_size), int(window_size)),
+                         kernel_regularizer=keras.regularizers.l2(l2_reg),
+                         kernel_initializer=keras.initializers.HeNormal(), padding='same'))
+
+        regularization = model_config.get('reg_method', False)
+        pool_size = model_config.get("pool_size", False) or model_config.get("pool%s_size" % layer_idx, False)
+
+        if regularization and regularization == "BatchNorm":
+            model.add(BatchNormalization())
+
+        elif model_config.get('activation', False):
+            model.add(parse_activation(model_config['activation']))
+
+        elif regularization and regularization == "Dropout":
+            model.add(Dropout(model_config['dropout_rate']))
+
+        elif pool_size:
+            model.add(MaxPooling2D((int(pool_size), int(pool_size)), padding='same'))
+
+    model.add(Flatten())
+
+    for layer_idx in range(model_config.get("n_deep", 0)):
+
+        fc_depth = model_config.get('fc_depth', False) or model_config.get("fc%s_depth" % layer_idx, False)
+        l2_reg = model_config.get("l2_reg", False)
+
+        model.add(Dense(int(fc_depth),
+                        kernel_initializer=keras.initializers.HeNormal(),
+                        kernel_regularizer=keras.regularizers.l2(l2_reg)))
+
+        regularization = model_config.get('reg_method', False)
+        if regularization and regularization == "BatchNorm":
+            model.add(BatchNormalization())
+
+        elif model_config.get('activation', False):
+            model.add(parse_activation(model_config['activation']))
+
+        elif regularization and regularization == "Dropout":
+            model.add(Dropout(model_config['dropout_rate']))
+
     model.add(Dense(model_config['num_classes'], activation='softmax', dtype='float32'))
 
     return model
