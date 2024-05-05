@@ -165,9 +165,13 @@ if __name__ == '__main__':
 
     dataset_filtering_frequency_and_quantile = [
         # (3, 0.5), (5, 0.5),
-        (5, 0.7), (10, 0.5), (10, 0.7),
+        # (5, 0.7), (10, 0.5),
+        (10, 0.7),
     ]
-    kappas = [1.0, 2.5, 4.0]
+    kappas = [
+        # 1.0,
+        2.5, 4.0
+    ]
 
     for i in range(5):
         for filtering_frequency, filtering_quantile in dataset_filtering_frequency_and_quantile:
