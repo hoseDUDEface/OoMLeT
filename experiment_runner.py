@@ -133,6 +133,9 @@ def run_training(run_config, train_generator, val_generator, test_generator, run
     val_acc = evaluate_model(model, val_generator)
     test_acc = evaluate_model(model, test_generator)
 
+    # Deleting saved model
+    os.remove(model_ckpt_fullname)
+
     metrics = {'val_acc': val_acc, 'test_acc': test_acc}
 
     return metrics
@@ -209,10 +212,8 @@ def save_run_config(model_config, run_path):
 def build_callbacks(model, optimizer, run_path, epochs=None, verbose=0):
     early_stop = EarlyStoppingCallback(monitor='val_loss', min_delta=0.0001, patience=7, verbose=verbose)
 
-    ckpt_path = path_join(run_path, "checkpoints")
-    os.makedirs(ckpt_path, exist_ok=True)
     # model_ckpt_fullname = path_join(run_path, 'cp-{epoch:03d}-{val_binary_accuracy:.3f}-{val_loss:.4f}-{val_precision:.3f}-{val_recall:.3f}.h5')
-    model_ckpt_fullname = path_join(ckpt_path, 'cp-best_loss.h5')
+    model_ckpt_fullname = path_join(run_path, 'cp-best_loss.h5')
     ckpt_callback = ModelCheckpoint(filepath=model_ckpt_fullname, save_best_only=True, save_weights_only=True, verbose=verbose)
     # LR_callback = ReduceLROnPlateau(factor=0.2, patience=4, verbose=verbose)
     LR_callback = ReduceLROnPlateauCallback(factor=0.3, patience=4, min_delta=0.0001, verbose=verbose, optim_lr=optimizer.learning_rate, mode='min')
@@ -280,4 +281,5 @@ def evaluate_model(model, test_generator):
 
 
 if __name__ == '__main__':
+
     run_training()

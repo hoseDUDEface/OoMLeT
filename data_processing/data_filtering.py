@@ -12,47 +12,58 @@ from hardcodings import RESULTS_CSV_NAME, TRAINING_CSV_NAME, MIN_CORRECT_LOSS
 
 
 def filter_dataset(x_train, y_train, train_indice, experiment_path, experiment_config, run_index=0, result_metric='test_acc'):
-    filtering_quantile = experiment_config.get('filtering_quantile', 0.5)
+    filtering_quantile = experiment_config.get('filtering_quantile', 0)
     filtering_method = experiment_config.get('filtering_method', "example forgetting")
 
     csv_fullname = path_join(experiment_path, RESULTS_CSV_NAME)
     res_df = load_df(csv_fullname)
 
-    median_acc = res_df[result_metric].quantile(filtering_quantile)
-    good_df = res_df.loc[res_df[result_metric] >= median_acc]
-    good_indice = list(good_df.index)
+    q_acc = res_df[result_metric].quantile(filtering_quantile)
+    relevant_df = res_df.loc[res_df[result_metric] >= q_acc]
+    relevant_indice = list(relevant_df.index)
 
-    full_df = load_experiment_runs_results(experiment_path, good_indice)
+    full_df = load_experiment_runs_results(experiment_path, relevant_indice)
     runs_sample_losses = runs_results_to_dict_of_losses(full_df)
 
     if filtering_method == "example forgetting":
-        samples_runs_forget_counts, runs_samples_forget_counts = count_forgetting_events(runs_sample_losses)
-
-        runs_sample_forgetting_df = pd.DataFrame.from_dict(samples_runs_forget_counts, orient='index', columns=runs_samples_forget_counts.keys())
-
-        max_forgets = runs_sample_forgetting_df.max(axis=1)
-
-        max_forgets_plot_name = "max_forgets-{}.jpg".format(run_index)
-        max_forgets_plot_fullname = path_join(experiment_path, max_forgets_plot_name)
-        plot_histogram(max_forgets, add_cumulative=True, save_fullname=max_forgets_plot_fullname, only_save=True)
-
-        unforgettable_samples = list(max_forgets[max_forgets == 0].index)
-        forgettable_samples = list(max_forgets[max_forgets > 0].index)
-
-        pickle_fullname = path_join(experiment_path, 'unforgettable_samples-{}.pckl'.format(run_index))
-        write_pickle(pickle_fullname, unforgettable_samples)
-
-        filtered_x_train = x_train[forgettable_samples]
-        filtered_y_train = y_train[forgettable_samples]
-        filtered_train_indice = train_indice[forgettable_samples]
-
-        print("Epoch {} | Found {} unforgettable samples | Remaining train set size: {}".format(
-            run_index, len(unforgettable_samples), len(filtered_train_indice)))
+        forgettable_samples, unforgettable_samples = example_forgetting_filter(
+            experiment_config, experiment_path, runs_sample_losses, run_index
+        )
 
     else:
         raise NotImplementedError("Dataset filtering method {} is not implemented".format(filtering_method))
 
+    pickle_fullname = path_join(experiment_path, 'unforgettable_samples-{}.pckl'.format(run_index))
+    write_pickle(pickle_fullname, unforgettable_samples)
+
+    filtered_x_train = x_train[forgettable_samples]
+    filtered_y_train = y_train[forgettable_samples]
+    filtered_train_indice = train_indice[forgettable_samples]
+
+    print("Epoch {} | Found {} unforgettable samples | Remaining train set size: {}".format(
+        run_index, len(unforgettable_samples), len(filtered_train_indice)
+    ))
+
     return filtered_x_train, filtered_y_train, filtered_train_indice
+
+
+def example_forgetting_filter(experiment_config, experiment_path, runs_sample_losses, run_index):
+    samples_runs_forget_counts, runs_samples_forget_counts = count_forgetting_events(runs_sample_losses)
+    runs_sample_forgetting_df = pd.DataFrame.from_dict(samples_runs_forget_counts, orient='index',
+                                                       columns=runs_samples_forget_counts.keys())
+    # max_forgets = runs_sample_forgetting_df.max(axis=1)
+    max_forgets = runs_sample_forgetting_df.min(axis=1)
+
+    max_forgets_plot_name = "max_forgets-{}.jpg".format(run_index)
+    max_forgets_plot_fullname = path_join(experiment_path, max_forgets_plot_name)
+    plot_histogram(max_forgets, add_cumulative=True, save_fullname=max_forgets_plot_fullname, only_save=True)
+
+    max_forgets_threshold = experiment_config.get('filtering_max_forgets', 1)
+
+    unforgettable_samples = list(max_forgets[max_forgets < max_forgets_threshold].index)
+    forgettable_samples = list(max_forgets[max_forgets >= max_forgets_threshold].index)
+
+    return forgettable_samples, unforgettable_samples
 
 
 def df_to_index_loss_dict(df):
@@ -86,9 +97,6 @@ def runs_results_to_dict_of_losses(runs_results_df):
 
     for run_idx in pd.unique(runs_results_df['run']):
         run_df = runs_results_df.loc[runs_results_df['run'] == run_idx]
-
-        # print(run_idx, len(run_df))
-
         index_to_loss_dict = df_to_index_loss_dict(run_df)
 
         runs_sample_losses[run_idx] = index_to_loss_dict

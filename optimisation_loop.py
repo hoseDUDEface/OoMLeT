@@ -13,12 +13,11 @@ from bayes_opt import BayesianOptimization
 from bayes_opt import UtilityFunction
 
 from config_space import parse_config_space, load_config, parse_bounds_dict, format_suggested_config
-from data_processing.data_filtering import filter_dataset
+from data_processing.data_filterer import DataFilterer
 from data_processing.data_loaders import load_defined_data
 from data_processing.simple_generator import SimpleGenerator
 from experiment_runner import run_training
-from hardcodings import EXPERIMENTS_PATH, DATA_FILTERING_PATH, SEARCHED_SPACE_PATH, EXPERIMENT_CONFIGS_PATH, \
-    RESULTS_CSV_NAME
+from hardcodings import EXPERIMENTS_PATH, DATA_FILTERING_PATH, SEARCHED_SPACE_PATH, RESULTS_CSV_NAME
 
 
 def main(config_file_name: str, experiment_config_overrides: Optional[dict] = None) -> None:
@@ -28,7 +27,7 @@ def main(config_file_name: str, experiment_config_overrides: Optional[dict] = No
     target_metric = "test_acc"
     # experiment_config['max_runs'] = 1
     # experiment_config['epochs'] = 1
-    filtering_frequency = experiment_config.get('filtering_frequency', 0)
+    # filtering_frequency = experiment_config.get('filtering_frequency', 0)
     batch_size = experiment_config.get("batch_size", 128)
 
     dataset_solution_name = "{}-{}".format(experiment_config['dataset'], experiment_config['architecture'])
@@ -43,17 +42,21 @@ def main(config_file_name: str, experiment_config_overrides: Optional[dict] = No
     os.makedirs(experiment_path, exist_ok=True)
     result_csv_fullname = path_join(experiment_path, RESULTS_CSV_NAME)
 
+    # Dataset processing
     dataset = load_defined_data(experiment_config['dataset'], experiment_config['data_format'], do_preprocess=True)
 
     dataset['train_indice'] = np.arange(len(dataset['x_train']))
-    train_indice = delete_easy_samples(dataset, experiment_config)
+    # dataset['train_indice'] = delete_easy_samples(dataset, experiment_config)
 
     experiment_config['input_shape'] = dataset['input_shape']
     experiment_config['num_classes'] = dataset['num_classes']
+    baseline_acc = 1 / dataset['num_classes'] * 1.1
 
     train_generator = SimpleGenerator(dataset['x_train'], dataset['y_train'], dataset['train_indice'], batch_size=batch_size, preprocess=False)
     val_generator = SimpleGenerator(dataset['x_val'], dataset['y_val'], batch_size=batch_size, preprocess=False)
     test_generator = SimpleGenerator(dataset['x_test'], dataset['y_test'], batch_size=batch_size, preprocess=False)
+
+    data_filterer = DataFilterer(dataset, experiment_config, experiment_path, target_metric, baseline_acc)
 
     # Define search space
     search_space = parse_config_space(experiment_config)
@@ -71,13 +74,13 @@ def main(config_file_name: str, experiment_config_overrides: Optional[dict] = No
     utility = UtilityFunction(kind=experiment_config["utility_f"], kappa=experiment_config["kappa"], xi=experiment_config["xi"])
 
     run_results = []
-    for run_idx in range(experiment_config["max_runs"]):
+    for run_index in range(experiment_config["max_runs"]):
         suggested_config = optimizer.suggest(utility)
 
         run_config, hyperparameters = format_suggested_config(suggested_config, experiment_config)
-        print("Next point ({:2d}) to probe is: {}".format(run_idx, hyperparameters))
+        print("Next point ({:2d}) to probe is: {}".format(run_index, hyperparameters))
 
-        run_path = path_join(experiment_path, str(run_idx))
+        run_path = path_join(experiment_path, str(run_index))
         os.makedirs(run_path, exist_ok=True)
 
         now = datetime.now()
@@ -98,20 +101,23 @@ def main(config_file_name: str, experiment_config_overrides: Optional[dict] = No
         result_df = pd.DataFrame.from_dict(run_results)
         save_dataframe(result_df, result_csv_fullname)
 
-        if filtering_frequency > 0 and (run_idx+1) % filtering_frequency == 0:
-            filtered_x_train, filtered_y_train, filtered_train_indice = filter_dataset(
-                dataset['x_train'], dataset['y_train'], dataset['train_indice'], experiment_path, experiment_config, run_idx, target_metric
-            )
+        data_filterer.update_result_df()
+        if data_filterer.do_filter_condition(run_index):
+            filtered_x_train, filtered_y_train, filtered_train_indice = data_filterer.get_filtered_dataset(run_index)
             train_generator = SimpleGenerator(filtered_x_train, filtered_y_train, filtered_train_indice, batch_size=batch_size, preprocess=False)
+
+        # if filtering_frequency > 0 and (run_idx+1) % filtering_frequency == 0:
+        #     filtered_x_train, filtered_y_train, filtered_train_indice = filter_dataset(
+        #         dataset['x_train'], dataset['y_train'], dataset['train_indice'], experiment_path, experiment_config, run_idx, target_metric
+        #     )
+        #     train_generator = SimpleGenerator(filtered_x_train, filtered_y_train, filtered_train_indice, batch_size=batch_size, preprocess=False)
+        # elif filtering_frequency == 0 and experiment_config.get('filtering_top_k', 0) > 0:
+        #     pass
 
         print("Run end")
         print()
 
     print("Optimization end")
-
-    # result_df = pd.DataFrame.from_dict(run_results)
-    # result_csv_fullname = path_join(experiment_path, "results.csv")
-    # save_dataframe(result_df, result_csv_fullname)
 
 
 def override_config(experiment_config, experiment_config_overrides):
@@ -156,43 +162,48 @@ def delete_easy_samples(dataset, experiment_config):
 
 
 if __name__ == '__main__':
-    # config_file_fullnames = [
-    #     "exp_configs/MNIST-LeNet2-config.json",
-    #     "exp_configs/MNIST-LeNet2-config-2.json",
-    #     "exp_configs/MNIST-LeNet2-config-3.json",
-    # ]
-    config_file_fullname = path_join(EXPERIMENT_CONFIGS_PATH, "CIFAR-10", "config-1.json")
-
-    dataset_filtering_frequency_and_quantile = [
-        # (3, 0.5), (5, 0.5),
-        # (5, 0.7), (10, 0.5),
-        (10, 0.7),
+    config_file_fullnames = [
+        "exp_configs/MNIST/LeNet1-config-EF.json",
+        "exp_configs/MNIST/LeNet2-config-EF.json",
     ]
+    # config_file_fullname = path_join(EXPERIMENT_CONFIGS_PATH, "CIFAR-10", "config-2.json")
+    # config_file_fullname = path_join(EXPERIMENT_CONFIGS_PATH, "MNIST", "MNIST-LeNet1-config-algo.json")
+
+    # dataset_filtering_frequency_and_quantile = [
+    #     (3, 0.5), (5, 0.5),
+    #     (5, 0.7),
+    #     (10, 0.5),
+    #     (10, 0.7),
+    # ]
+
+    top_ks = [2, 3, 5, 10]
     kappas = [
-        # 1.0,
-        2.5, 4.0
+        2.5,
+        1.0,
+        4.0,
     ]
 
     for i in range(5):
-        for filtering_frequency, filtering_quantile in dataset_filtering_frequency_and_quantile:
+        for config_file_fullname in config_file_fullnames:
+            # for filtering_frequency, filtering_quantile in dataset_filtering_frequency_and_quantile:
             for kappa in kappas:
-                print("Running", config_file_fullname)
+                for top_k in top_ks:
+                    print("Running", config_file_fullname)
 
-                experiment_config_overrides = {
-                    "kappa": kappa,
-                    "filtering_frequency": filtering_frequency,
-                    "filtering_quantile": filtering_quantile,
-                }
+                    experiment_config_overrides = {
+                        "kappa": kappa,
+                        "filtering_top_k": top_k,
+                    }
 
-                try:
-                    main(config_file_fullname, experiment_config_overrides)
-                except Exception as e:
-                    print("--------------------------- EXCEPTION ---------------------------")
-                    print(e)
-                    print("--------------------------- EXCEPTION ---------------------------")
+                    try:
+                        main(config_file_fullname, experiment_config_overrides)
+                    except Exception as e:
+                        print("--------------------------- EXCEPTION ---------------------------")
+                        print(e)
+                        print("--------------------------- EXCEPTION ---------------------------")
 
-                finally:
-                    continue
+                    finally:
+                        continue
 
 
     # config_file_fullnames = [path_join(EXPERIMENT_CONFIGS_PATH, "CIFAR-10", config_name)

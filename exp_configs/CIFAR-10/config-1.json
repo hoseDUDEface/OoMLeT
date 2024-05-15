@@ -3,9 +3,12 @@
   "dataset": "CIFAR-10",
   "architecture": "LeNet",
 
-  "filtering_frequency": 1,
+  "filtering_frequency": "Nesamone",
   "filtering_quantile": 0,
+  "filtering_top_k": 0,
   "filtering_method": "example forgetting",
+  "filtering_max_forgets": 2,
+  "filtering_aggregation": "min",
 
   "sample_filter": "",
   "load_ss": "",
@@ -14,8 +17,8 @@
   "kappa": 0,
   "xi": 0.0,
 
-  "max_runs": 20,
-  "epochs": 50,
+  "max_runs": 100,
+  "epochs": 100,
   "batch_size": 512,
 
   "data_format": "channels_first",
