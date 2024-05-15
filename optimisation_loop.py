@@ -175,11 +175,11 @@ if __name__ == '__main__':
     # config_file_fullname = path_join(EXPERIMENT_CONFIGS_PATH, "CIFAR-10", "config-2.json")
     # config_file_fullname = path_join(EXPERIMENT_CONFIGS_PATH, "MNIST", "MNIST-LeNet1-config-algo.json")
 
-    top_ks = [2, 5]
+    top_ks = [3, 5, 2, 10]
     kappas = [
         2.5,
-        1.0,
         4.0,
+        1.0,
     ]
 
     for i in range(5):
