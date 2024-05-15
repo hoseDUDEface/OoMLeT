@@ -16,7 +16,7 @@
   "xi": 0.0,
 
   "max_runs": 100,
-  "epochs": 5,
+  "epochs": 100,
   "batch_size": 1024,
 
   "data_format": "channels_first",
