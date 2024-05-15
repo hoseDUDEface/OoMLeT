@@ -87,6 +87,7 @@ def main(config_file_name: str, experiment_config_overrides: Optional[dict] = No
         metrics = run_training(run_config, train_generator, val_generator, test_generator, run_path)
         now, diff = get_spent_time(now, False)
         target = metrics[target_metric]
+        target *= 10
         print(metrics)
         print("Found the target value to be: {}".format(target))
 
@@ -162,21 +163,19 @@ def delete_easy_samples(dataset, experiment_config):
 
 
 if __name__ == '__main__':
+    # config_file_fullnames = [
+    #     "exp_configs/MNIST/LeNet1-config-EF.json",
+    #     "exp_configs/MNIST/LeNet2-config-EF.json",
+    # ]
     config_file_fullnames = [
-        "exp_configs/MNIST/LeNet1-config-EF.json",
-        "exp_configs/MNIST/LeNet2-config-EF.json",
+        # "exp_configs/CIFAR-10/config-1st_L.json",
+        "exp_configs/MNIST/LeNet1-config-1st_L.json",
+        "exp_configs/MNIST/LeNet2-config-1st_L.json",
     ]
     # config_file_fullname = path_join(EXPERIMENT_CONFIGS_PATH, "CIFAR-10", "config-2.json")
     # config_file_fullname = path_join(EXPERIMENT_CONFIGS_PATH, "MNIST", "MNIST-LeNet1-config-algo.json")
 
-    # dataset_filtering_frequency_and_quantile = [
-    #     (3, 0.5), (5, 0.5),
-    #     (5, 0.7),
-    #     (10, 0.5),
-    #     (10, 0.7),
-    # ]
-
-    top_ks = [2, 3, 5, 10]
+    top_ks = [2, 5]
     kappas = [
         2.5,
         1.0,
@@ -184,10 +183,9 @@ if __name__ == '__main__':
     ]
 
     for i in range(5):
-        for config_file_fullname in config_file_fullnames:
-            # for filtering_frequency, filtering_quantile in dataset_filtering_frequency_and_quantile:
-            for kappa in kappas:
-                for top_k in top_ks:
+        for top_k in top_ks:
+            for config_file_fullname in config_file_fullnames:
+                for kappa in kappas:
                     print("Running", config_file_fullname)
 
                     experiment_config_overrides = {
