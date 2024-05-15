@@ -1,0 +1,38 @@
+{
+  "name": "example_forgetting-ucb",
+  "dataset": "MNIST",
+  "architecture": "LeNet2",
+
+  "filtering_quantile": 0,
+  "filtering_top_k": 0,
+  "filtering_method": "1st look hardness",
+  "filtering_aggregation": "min",
+
+  "sample_filter": "",
+  "load_ss": "",
+
+  "utility_f": "ucb",
+  "kappa": 2.5,
+  "xi": 0.0,
+
+  "max_runs": 100,
+  "epochs": 50,
+  "batch_size": 1024,
+
+  "data_format": "channels_first",
+  "output_f": "softmax",
+
+  "learning_rate": ["uniform-f", 0.0001, 0.05, true],
+  "reg_param": ["uniform-f", 0, 1],
+  "dropout_rate": ["uniform-f", 0, 0.9],
+
+  "conv1_depth": ["uniform-i", 1, 352],
+  "pool1_size": 2,
+  "conv2_depth": ["uniform-i", 1, 352],
+  "pool2_size": 2,
+  "window_size": 7,
+  "fc_depth": ["uniform-i", 1, 1024],
+  "activation": ["categorical", ["sigmoid", "relu", "elu", "lrelu", "tanh"]],
+  "optimizer": ["categorical", ["GD", "AdaDelta", "AdaGrad", "Adam", "RMSProp", "Momentum"]],
+  "batch_normalization": ["uniform-i", 0, 1]
+}

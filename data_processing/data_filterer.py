@@ -32,7 +32,7 @@ class DataFilterer:
         self.filtering_max_forgets = experiment_config.get('filtering_max_forgets', 0)
         self.filtering_aggregation = experiment_config.get('filtering_aggregation', 'max')
         # Do not filter if fields are not defined
-        self.do_filter = (self.filtering_quantile or self.filtering_top_k) and self.filtering_method and self.filtering_max_forgets
+        self.do_filter = (self.filtering_quantile or self.filtering_top_k) and self.filtering_method
         if not self.do_filter: print("Filtering values not defined, will not filter")
 
         self.result_csv_fullname = path_join(experiment_path, RESULTS_CSV_NAME)
@@ -80,10 +80,6 @@ class DataFilterer:
             runs_sample_losses = self.trainings_df_to_dict_of_losses(trainings_df)
             forgettable_samples, unforgettable_samples = self.example_forgetting_filter(runs_sample_losses, run_index)
 
-            print("Epoch {} | example forgetting found {} unforgettable samples | Remaining train set size: {}".format(
-                run_index, len(unforgettable_samples), len(forgettable_samples)
-            ))
-
         elif self.filtering_method == "1st look hardness":
             runs_first_losses = self.trainings_df_to_dict_of_losses(trainings_df, True)
 
@@ -95,13 +91,18 @@ class DataFilterer:
         pickle_fullname = path_join(self.experiment_path, 'unforgettable_samples-{}.pckl'.format(run_index))
         write_pickle(pickle_fullname, unforgettable_samples)
 
-        updated_forgettable_samples = set(forgettable_samples).intersection(set(self.forgettable_samples))
+        updated_forgettable_samples = set(forgettable_samples).union(set(self.forgettable_samples)) if self.forgettable_samples else set(forgettable_samples)
         # updated_forgettable_samples = forgettable_samples
-        self.forgettable_samples = updated_forgettable_samples
+        self.forgettable_samples = list(updated_forgettable_samples)
+        self.last_run_idx = run_index
 
-        filtered_x_train = self.x_train[updated_forgettable_samples]
-        filtered_y_train = self.y_train[updated_forgettable_samples]
-        filtered_train_indice = self.train_indice[updated_forgettable_samples]
+        print("Epoch {} | {} found {} unforgettable samples | Remaining train set size: {}".format(
+            run_index, self.filtering_method, len(unforgettable_samples), len(self.forgettable_samples)
+        ))
+
+        filtered_x_train = self.x_train[self.forgettable_samples]
+        filtered_y_train = self.y_train[self.forgettable_samples]
+        filtered_train_indice = self.train_indice[self.forgettable_samples]
 
         return filtered_x_train, filtered_y_train, filtered_train_indice
 
@@ -120,7 +121,8 @@ class DataFilterer:
 
         return forgettable_samples, unforgettable_samples
 
-    def get_samples_runs_first_losses(self, runs_first_losses):
+    @staticmethod
+    def get_samples_runs_first_losses(runs_first_losses):
         samples_runs_first_loss = {}
 
         for run_index, run_losses in runs_first_losses.items():
@@ -196,6 +198,9 @@ class DataFilterer:
             df_mask = (trainings_df['run'] == run_idx) & (trainings_df['epoch'] == 0) if only_first_epoch else trainings_df['run'] == run_idx
             run_df = trainings_df.loc[df_mask]
             # run_df = trainings_df.loc[trainings_df['run'] == run_idx]
+
+            if only_first_epoch:
+                run_df = run_df.drop_duplicates('index')
 
             index_to_loss_dict = self.df_to_index_loss_dict(run_df)
 
