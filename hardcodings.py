@@ -10,5 +10,3 @@ EXPERIMENT_CONFIGS_PATH = path_join(PROJECT_PATH, "exp_configs")
 
 RESULTS_CSV_NAME = "results.csv"
 TRAINING_CSV_NAME = 'training.csv'
-
-MIN_CORRECT_LOSS = 0.3

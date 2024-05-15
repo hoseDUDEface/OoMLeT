@@ -1,13 +1,19 @@
 import numpy as np
-from keras.datasets import mnist, cifar10
+from keras.datasets import mnist, cifar10, cifar100
 
 
 def load_defined_data(dataset_name: str, data_format='channels_first', do_preprocess=True):
     if dataset_name.upper() == "MNIST":
         dataset = get_mnist_data(data_format, do_preprocess)
 
-    if dataset_name.upper() == "CIFAR-10":
+    elif dataset_name.upper() == "CIFAR-10":
         dataset = get_cifar10_data(data_format, do_preprocess)
+
+    elif dataset_name.upper() == "CIFAR-100":
+        dataset = get_cifar100_data(data_format, do_preprocess)
+
+    else:
+        raise NotImplementedError("Dataset {} is not implemented".format(dataset_name))
 
     return dataset
 
@@ -39,6 +45,22 @@ def get_cifar10_data(data_format: str = 'channels_first', do_preprocess: bool = 
     # the data, split between train and test sets
     # (x_train, y_train), (x_test, y_test) = cifar10.load_data()
     dataset_tuple = cifar10.load_data()
+    dataset = format_keras_dataset(dataset_tuple, data_format, do_preprocess, img_channels, img_cols, img_rows, n_train, n_valid, num_classes)
+
+    return dataset
+
+
+def get_cifar100_data(data_format: str = 'channels_first', do_preprocess: bool = True):
+    img_rows = 32
+    img_cols = 32
+    img_channels = 3
+    num_classes = 100
+    n_train = 45000
+    n_valid = 5000
+
+    # the data, split between train and test sets
+    # (x_train, y_train), (x_test, y_test) = cifar10.load_data()
+    dataset_tuple = cifar100.load_data()
     dataset = format_keras_dataset(dataset_tuple, data_format, do_preprocess, img_channels, img_cols, img_rows, n_train, n_valid, num_classes)
 
     return dataset

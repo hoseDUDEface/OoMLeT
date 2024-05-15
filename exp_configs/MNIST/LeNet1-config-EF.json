@@ -1,0 +1,38 @@
+{
+  "name": "example_forgetting-ucb",
+  "dataset": "MNIST",
+  "architecture": "LeNet1",
+
+  "filtering_frequency": "Nesamone",
+  "filtering_quantile": 0,
+  "filtering_top_k": 0,
+  "filtering_method": "example forgetting",
+  "filtering_max_forgets": 1,
+  "filtering_aggregation": "min",
+
+  "sample_filter": "",
+  "load_ss": "",
+
+  "utility_f": "ucb",
+  "kappa": 2.5,
+  "xi": 0.0,
+
+  "max_runs": 100,
+  "epochs": 50,
+  "batch_size": 1024,
+
+  "data_format": "channels_first",
+  "output_f": "softmax",
+
+  "learning_rate": ["uniform-f", 0.0001, 0.05, true],
+  "reg_param": ["uniform-f", 0, 1],
+
+  "conv1_depth": ["uniform-i", 1, 350],
+  "pool1_size": ["uniform-i", 2, 3],
+  "conv2_depth": ["uniform-i", 1, 350],
+  "pool2_size": ["uniform-i", 2, 3],
+  "window_size": ["uniform-i", 2, 10],
+  "activation": "relu",
+  "fc_depth": ["uniform-i", 1, 1024],
+  "dropout_rate": ["uniform-f", 0.1, 1]
+}

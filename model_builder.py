@@ -6,6 +6,10 @@ from keras.layers import Conv2D, MaxPooling2D, Dropout, Flatten, Dense, BatchNor
 from keras import activations, initializers, regularizers
 
 
+BATCH_NORM_MOMENTUM = 0.997
+BATCH_NORM_EPSILON = 1e-5
+
+
 def build_model(run_config):
     architecture = run_config['architecture']
     if architecture == 'lenet5':
@@ -72,7 +76,7 @@ def build_LeNet2_model(model_config):
     model.add(Conv2D(int(model_config['conv2_depth']), kernel_size=window_shape,
                      kernel_regularizer=keras.regularizers.l2(model_config['reg_param']),
                      kernel_initializer=keras.initializers.HeNormal(), padding='same'))
-    if bool(model_config.get('batch_normalization', 0)):
+    if model_config.get('batch_normalization', 0):
         model.add(BatchNormalization())
     model.add(parse_activation(model_config['activation']))
 
@@ -83,7 +87,7 @@ def build_LeNet2_model(model_config):
     model.add(Dense(int(model_config['fc_depth']),
                     kernel_initializer=keras.initializers.HeNormal(),
                     kernel_regularizer=keras.regularizers.l2(model_config['reg_param'])))
-    if bool(model_config.get('batch_normalization', 0)):
+    if model_config.get('batch_normalization', 0):
         model.add(BatchNormalization())
     model.add(parse_activation(model_config['activation']))
 
@@ -114,15 +118,15 @@ def build_LeNet_model(model_config):
         pool_size = model_config.get("pool_size", False) or model_config.get("pool%s_size" % layer_idx, False)
 
         if regularization and regularization == "BatchNorm":
-            model.add(BatchNormalization())
+            model.add(BatchNormalization(momentum=BATCH_NORM_MOMENTUM, epsilon=BATCH_NORM_EPSILON))
 
-        elif model_config.get('activation', False):
+        if model_config.get('activation', False):
             model.add(parse_activation(model_config['activation']))
 
-        elif regularization and regularization == "Dropout":
+        if regularization and regularization == "Dropout":
             model.add(Dropout(model_config['dropout_rate']))
 
-        elif pool_size:
+        if pool_size:
             model.add(MaxPooling2D((int(pool_size), int(pool_size)), padding='same'))
 
     model.add(Flatten())
@@ -138,12 +142,12 @@ def build_LeNet_model(model_config):
 
         regularization = model_config.get('reg_method', False)
         if regularization and regularization == "BatchNorm":
-            model.add(BatchNormalization())
+            model.add(BatchNormalization(momentum=BATCH_NORM_MOMENTUM, epsilon=BATCH_NORM_EPSILON))
 
-        elif model_config.get('activation', False):
+        if model_config.get('activation', False):
             model.add(parse_activation(model_config['activation']))
 
-        elif regularization and regularization == "Dropout":
+        if regularization and regularization == "Dropout":
             model.add(Dropout(model_config['dropout_rate']))
 
     model.add(Dense(model_config['num_classes'], activation='softmax', dtype='float32'))
