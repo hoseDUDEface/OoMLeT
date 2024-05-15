@@ -1,5 +1,5 @@
 {
-  "name": "example_forgetting-ucb",
+  "name": "1st_look_hardness-ucb",
   "dataset": "MNIST",
   "architecture": "LeNet2",
 
