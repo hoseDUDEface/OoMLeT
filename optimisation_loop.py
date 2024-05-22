@@ -87,7 +87,7 @@ def main(config_file_name: str, experiment_config_overrides: Optional[dict] = No
         metrics = run_training(run_config, train_generator, val_generator, test_generator, run_path)
         now, diff = get_spent_time(now, False)
         target = metrics[target_metric]
-        target *= 10
+        # target *= 10
         print(metrics)
         print("Found the target value to be: {}".format(target))
 
@@ -175,7 +175,7 @@ if __name__ == '__main__':
     # config_file_fullname = path_join(EXPERIMENT_CONFIGS_PATH, "CIFAR-10", "config-2.json")
     # config_file_fullname = path_join(EXPERIMENT_CONFIGS_PATH, "MNIST", "MNIST-LeNet1-config-algo.json")
 
-    top_ks = [3, 5, 2, 10]
+    top_ks = [3, 5, 2, 10][::-1]
     kappas = [
         2.5,
         4.0,
