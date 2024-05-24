@@ -80,10 +80,14 @@ class DataFilterer:
             runs_sample_losses = self.trainings_df_to_dict_of_losses(trainings_df)
             forgettable_samples, unforgettable_samples = self.example_forgetting_filter(runs_sample_losses, run_index)
 
+            updated_forgettable_samples = forgettable_samples
+
         elif self.filtering_method == "1st look hardness":
             runs_first_losses = self.trainings_df_to_dict_of_losses(trainings_df, True)
 
             forgettable_samples, unforgettable_samples = self.first_look_hardness_filter(runs_first_losses)
+
+            updated_forgettable_samples = set(forgettable_samples).union(set(self.forgettable_samples)) if self.forgettable_samples else set(forgettable_samples)
 
         else:
             raise NotImplementedError("Dataset filtering method {} is not implemented".format(self.filtering_method))
@@ -91,8 +95,6 @@ class DataFilterer:
         pickle_fullname = path_join(self.experiment_path, 'unforgettable_samples-{}.pckl'.format(run_index))
         write_pickle(pickle_fullname, unforgettable_samples)
 
-        updated_forgettable_samples = set(forgettable_samples).union(set(self.forgettable_samples)) if self.forgettable_samples else set(forgettable_samples)
-        # updated_forgettable_samples = forgettable_samples
         self.forgettable_samples = list(updated_forgettable_samples)
         self.last_run_idx = run_index
 
