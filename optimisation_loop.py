@@ -175,66 +175,70 @@ if __name__ == '__main__':
     # config_file_fullname = path_join(EXPERIMENT_CONFIGS_PATH, "CIFAR-10", "config-2.json")
     # config_file_fullname = path_join(EXPERIMENT_CONFIGS_PATH, "MNIST", "MNIST-LeNet1-config-algo.json")
 
-    top_ks = [3, 5, 2, 10][::-1]
+    top_ks = [3, 5, 2, 10]
     kappas = [
+        1.0,
         2.5,
         4.0,
-        1.0,
+    ]
+
+    # for i in range(5):
+    #     for kappa in kappas:
+    #         for config_file_fullname in config_file_fullnames:
+    #             for top_k in top_ks:
+    #                 print("Running", config_file_fullname)
+    #
+    #                 experiment_config_overrides = {
+    #                     "kappa": kappa,
+    #                     "filtering_top_k": top_k,
+    #                 }
+    #
+    #                 try:
+    #                     main(config_file_fullname, experiment_config_overrides)
+    #                 except Exception as e:
+    #                     print("--------------------------- EXCEPTION ---------------------------")
+    #                     print(e)
+    #                     print("--------------------------- EXCEPTION ---------------------------")
+    #
+    #                 finally:
+    #                     continue
+
+    experiment_tuples = [
+        ("exp_configs/CIFAR-10/config-1st_L.json",     [(1, 10), (2.5, 10), (4, 10)]),
+        ("exp_configs/CIFAR-10/config-EF.json",        [(1, 3), (1, 5), (1, 2), (1, 10),
+                                                        (2.5, 10),
+                                                        (4, 5), (4, 10)]),
+
+
+        ("exp_configs/MNIST/LeNet1-config-1st_L.json", [(2.5, 5), (25, 2), (4, 5), (4, 2)]),
+        ("exp_configs/MNIST/LeNet1-config-EF.json",    [(1, 3), (1, 5), (1, 2), (1, 10),
+                                                        (2.5, 3), (2.5, 2), (2.5, 10),
+                                                        (4, 3), (4, 5), (4, 3), (4, 10)]),
+
+        ("exp_configs/MNIST/LeNet2-config-1st_L.json", [(1, 5), (1, 2), (1, 10),
+                                                        (4, 3), (4, 5), (4, 2)]),
+        ("exp_configs/MNIST/LeNet2-config-EF.json",    [(1, 2), (1, 2),
+                                                        (2.5, 2), (2.5, 10),
+                                                        (4, 10)]),
     ]
 
     for i in range(5):
-        for top_k in top_ks:
-            for config_file_fullname in config_file_fullnames:
-                for kappa in kappas:
-                    print("Running", config_file_fullname)
+        for config_file_fullname, param_tuples in experiment_tuples:
+            for kappa, top_k in param_tuples:
+                print("Running", config_file_fullname)
 
-                    experiment_config_overrides = {
-                        "kappa": kappa,
-                        "filtering_top_k": top_k,
-                    }
+                experiment_config_overrides = {
+                    "kappa": kappa,
+                    "filtering_top_k": top_k,
+                }
 
-                    try:
-                        main(config_file_fullname, experiment_config_overrides)
-                    except Exception as e:
-                        print("--------------------------- EXCEPTION ---------------------------")
-                        print(e)
-                        print("--------------------------- EXCEPTION ---------------------------")
+                try:
+                    main(config_file_fullname, experiment_config_overrides)
+                except Exception as e:
+                    print("--------------------------- EXCEPTION ---------------------------")
+                    print(e)
+                    print("--------------------------- EXCEPTION ---------------------------")
 
-                    finally:
-                        continue
+                finally:
+                    continue
 
-
-    # config_file_fullnames = [path_join(EXPERIMENT_CONFIGS_PATH, "CIFAR-10", config_name)
-    #                          for config_name in
-    #                          sorted(os.listdir(path_join(EXPERIMENT_CONFIGS_PATH, "CIFAR-10")))]
-    #
-    # for i in range(5):
-    #     for config_file_fullname in config_file_fullnames:
-    #         print("Running", config_file_fullname)
-    #         main(config_file_fullname)
-
-            # try:
-            #     main(config_file_fullname)
-            # except Exception as e:
-            #     print("--------------------------- EXCEPTION ---------------------------")
-            #     print(e)
-            #     print("--------------------------- EXCEPTION ---------------------------")
-            #
-            # finally:
-            #     continue
-
-    # while True:
-    #     # main(config_file_fullnames[0])
-    #
-    #     for config_file_fullname in config_file_fullnames:
-    #         print("Running", config_file_fullname)
-    #         main(config_file_fullname)
-            # try:
-            #     main(config_file_fullname)
-            # except Exception as e:
-            #     print("--------------------------- EXCEPTION ---------------------------")
-            #     print(e)
-            #     print("--------------------------- EXCEPTION ---------------------------")
-            #
-            # finally:
-            #     continue

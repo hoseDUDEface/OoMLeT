@@ -3,7 +3,6 @@
   "dataset": "MNIST",
   "architecture": "LeNet2",
 
-  "filtering_frequency": "Nesamone",
   "filtering_quantile": 0,
   "filtering_top_k": 0,
   "filtering_method": "example forgetting",
